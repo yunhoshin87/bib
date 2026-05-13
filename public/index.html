@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 목사님 - BIB</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .chat-container { height: calc(100vh - 180px); }
+        .message-ai { background-color: #f3f4f6; border-radius: 0 15px 15px 15px; }
+        .message-user { background-color: #3b82f6; color: white; border-radius: 15px 15px 0 15px; }
+    </style>
+</head>
+<body class="bg-gray-50 flex flex-col items-center p-4">
+    <header class="w-full max-w-2xl text-center mb-6">
+        <h1 class="text-3xl font-bold text-blue-800">🕊️ AI 목사님</h1>
+        <p class="text-gray-600 mt-2">무엇이든 털어놓으세요. 성경 말씀으로 함께하겠습니다.</p>
+    </header>
+
+    <main class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
+        <div id="chat-box" class="chat-container overflow-y-auto p-4 space-y-4">
+            <!-- Messages will appear here -->
+            <div class="flex justify-start">
+                <div class="message-ai p-4 max-w-[80%] shadow-sm">
+                    평안하십니까? 하나님의 사랑이 가득한 하루 되시길 기도합니다. 고민이 있거나 위로가 필요하시다면 언제든 말씀해 주세요.
+                </div>
+            </div>
+        </div>
+
+        <div class="p-4 border-t border-gray-100 flex gap-2">
+            <button id="mic-btn" onclick="startRecognition()" class="bg-gray-100 p-3 rounded-full hover:bg-gray-200 transition-all" title="말씀으로 전하기">🎤</button>
+            <input type="text" id="user-input" placeholder="말씀을 남겨주세요..." class="flex-1 border rounded-full px-6 py-3 outline-none focus:border-blue-500 transition-all">
+            <button onclick="sendMessage()" class="bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition-all font-bold">전송</button>
+        </div>
+    </main>
+
+    <script>
+        const chatBox = document.getElementById('chat-box');
+        const userInput = document.getElementById('user-input');
+        const micBtn = document.getElementById('mic-btn');
+        let history = [];
+
+        // TTS Setup
+        const synth = window.speechSynthesis;
+        function speak(text) {
+            if (synth.speaking) synth.cancel();
+            const utter = new SpeechSynthesisUtterance(text);
+            const voices = synth.getVoices();
+            // Try to find a mature, calm male Korean voice
+            const maleVoice = voices.find(v => v.lang === 'ko-KR' && (v.name.includes('Male') || v.name.includes('Daeho') || v.name.includes('Kisu'))) || 
+                              voices.find(v => v.lang === 'ko-KR');
+            utter.voice = maleVoice;
+            utter.pitch = 0.8; // Middle-aged, calm depth
+            utter.rate = 0.88; // Slightly slower, more deliberate and gentle
+            utter.volume = 1.0;
+            synth.speak(utter);
+        }
+
+        // STT Setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.lang = 'ko-KR';
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                userInput.value = transcript;
+                sendMessage();
+            };
+            recognition.onend = () => micBtn.classList.remove('bg-red-100', 'animate-pulse');
+        }
+
+        function startRecognition() {
+            if (!recognition) return alert('브라우저가 음성 인식을 지원하지 않습니다.');
+            recognition.start();
+            micBtn.classList.add('bg-red-100', 'animate-pulse');
+        }
+
+        async function sendMessage() {
+            const message = userInput.value.trim();
+            if (!message) return;
+
+            appendMessage('user', message);
+            userInput.value = '';
+
+            try {
+                const response = await fetch('/api/chat', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message, history })
+                });
+
+                const data = await response.json();
+                if (data.response) {
+                    appendMessage('ai', data.response);
+                    speak(data.response); // Automatically speak the response
+                    history.push({ role: 'user', parts: [{ text: message }] });
+                    history.push({ role: 'model', parts: [{ text: data.response }] });
+                } else {
+                    const errMsg = '죄송합니다. 잠시 목소리가 들리지 않네요. 다시 말씀해 주시겠어요?';
+                    appendMessage('ai', errMsg);
+                    speak(errMsg);
+                }
+            } catch (error) {
+                const errMsg = '오류가 발생했습니다. 나중에 다시 시도해 주세요.';
+                appendMessage('ai', errMsg);
+                speak(errMsg);
+            }
+        }
+
+        function appendMessage(role, text) {
+            const div = document.createElement('div');
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            
+            const bubble = document.createElement('div');
+            bubble.className = `${role === 'user' ? 'message-user' : 'message-ai'} p-4 max-w-[80%] shadow-sm whitespace-pre-wrap`;
+            bubble.innerText = text;
+
+            div.appendChild(bubble);
+            chatBox.appendChild(div);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendMessage();
+        });
+    </script>
+</body>
+</html>
