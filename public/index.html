@@ -2,35 +2,85 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 목사님 - BIB</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AI Pastor - BIB</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        .chat-container { height: calc(100vh - 180px); }
-        .message-ai { background-color: #f3f4f6; border-radius: 0 15px 15px 15px; }
-        .message-user { background-color: #3b82f6; color: white; border-radius: 15px 15px 0 15px; }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+            background-color: #ffffff;
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
+        }
+        .apple-bg { background-color: #f5f5f7; }
+        .apple-blue { color: #0066cc; }
+        .apple-btn-primary {
+            background-color: #0066cc;
+            color: white;
+            border-radius: 980px;
+            transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .apple-btn-primary:active { transform: scale(0.96); }
+        .apple-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: saturate(180%) blur(20px);
+            border-radius: 18px;
+            border: 1px solid rgba(210, 210, 215, 0.4);
+        }
+        .chat-container { height: calc(100vh - 200px); scrollbar-width: none; }
+        .chat-container::-webkit-scrollbar { display: none; }
+        .message-ai { background-color: #f5f5f7; border-radius: 18px; border-bottom-left-radius: 4px; }
+        .message-user { background-color: #0066cc; color: white; border-radius: 18px; border-bottom-right-radius: 4px; }
+        .input-pill {
+            background-color: #f5f5f7;
+            border-radius: 980px;
+            border: 1px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+        .input-pill:focus { border-color: #0066cc; background-color: #ffffff; outline: none; }
+        .glass-header {
+            position: sticky;
+            top: 0;
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: saturate(180%) blur(20px);
+            z-index: 100;
+            border-bottom: 1px solid rgba(210, 210, 215, 0.4);
+        }
     </style>
 </head>
-<body class="bg-gray-50 flex flex-col items-center p-4">
-    <header class="w-full max-w-2xl text-center mb-6">
-        <h1 class="text-3xl font-bold text-blue-800">🕊️ AI 목사님</h1>
-        <p class="text-gray-600 mt-2">무엇이든 털어놓으세요. 성경 말씀으로 함께하겠습니다.</p>
+<body class="flex flex-col items-center min-h-screen">
+    <header class="w-full glass-header py-4 px-6 flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <span class="text-2xl">🕊️</span>
+            <h1 class="text-xl font-semibold tracking-tight">AI Pastor</h1>
+        </div>
+        <div class="text-xs font-medium apple-blue px-3 py-1 bg-blue-50 rounded-full">Live Connection</div>
     </header>
 
-    <main class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden flex flex-col">
-        <div id="chat-box" class="chat-container overflow-y-auto p-4 space-y-4">
-            <!-- Messages will appear here -->
-            <div class="flex justify-start">
-                <div class="message-ai p-4 max-w-[80%] shadow-sm">
-                    평안하십니까? 하나님의 사랑이 가득한 하루 되시길 기도합니다. 고민이 있거나 위로가 필요하시다면 언제든 말씀해 주세요.
+    <main class="w-full max-w-xl flex-1 flex flex-col p-4 md:p-6">
+        <div id="chat-box" class="chat-container overflow-y-auto space-y-6 py-4">
+            <!-- Initial Message -->
+            <div class="flex justify-start items-end gap-2">
+                <div class="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs">AI</div>
+                <div class="message-ai p-4 max-w-[85%] text-[15px] leading-relaxed shadow-sm">
+                    평안하십니까, 성도님. 허허... 오늘 하루는 어떠셨는지요? 
+                    마음속에 담아둔 말들이 있다면 편안하게 말씀해 주세요. 하나님의 지혜와 성경의 말씀으로 함께 고민하겠습니다.
                 </div>
             </div>
         </div>
 
-        <div class="p-4 border-t border-gray-100 flex gap-2">
-            <button id="mic-btn" onclick="startRecognition()" class="bg-gray-100 p-3 rounded-full hover:bg-gray-200 transition-all" title="말씀으로 전하기">🎤</button>
-            <input type="text" id="user-input" placeholder="말씀을 남겨주세요..." class="flex-1 border rounded-full px-6 py-3 outline-none focus:border-blue-500 transition-all">
-            <button onclick="sendMessage()" class="bg-blue-600 text-white px-6 py-3 rounded-full hover:bg-blue-700 transition-all font-bold">전송</button>
+        <div class="mt-auto pt-6 pb-2">
+            <div class="flex items-center gap-3 apple-card p-2 shadow-sm">
+                <button id="mic-btn" onclick="startRecognition()" class="p-3 rounded-full hover:bg-gray-100 transition-colors" title="Voice Input">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-20a3 3 0 00-3 3v8a3 3 0 006 0V5a3 3 0 00-3-3z"></path></svg>
+                </button>
+                <input type="text" id="user-input" placeholder="성경적 조언 구하기..." class="flex-1 input-pill px-5 py-3 text-[15px]">
+                <button onclick="sendMessage()" class="apple-btn-primary px-6 py-3 font-semibold text-[15px]">
+                    전송
+                </button>
+            </div>
+            <p class="text-[11px] text-center text-gray-400 mt-4 tracking-tight">Inspired by Apple Design System | Powered by Gemini 1.5</p>
         </div>
     </main>
 
@@ -46,13 +96,11 @@
             if (synth.speaking) synth.cancel();
             const utter = new SpeechSynthesisUtterance(text);
             const voices = synth.getVoices();
-            // Try to find a mature, calm male Korean voice
             const maleVoice = voices.find(v => v.lang === 'ko-KR' && (v.name.includes('Male') || v.name.includes('Daeho') || v.name.includes('Kisu'))) || 
                               voices.find(v => v.lang === 'ko-KR');
             utter.voice = maleVoice;
-            utter.pitch = 0.8; // Middle-aged, calm depth
-            utter.rate = 0.88; // Slightly slower, more deliberate and gentle
-            utter.volume = 1.0;
+            utter.pitch = 0.8; 
+            utter.rate = 0.88;
             synth.speak(utter);
         }
 
@@ -67,13 +115,13 @@
                 userInput.value = transcript;
                 sendMessage();
             };
-            recognition.onend = () => micBtn.classList.remove('bg-red-100', 'animate-pulse');
+            recognition.onend = () => micBtn.classList.remove('bg-red-50', 'text-red-500');
         }
 
         function startRecognition() {
             if (!recognition) return alert('브라우저가 음성 인식을 지원하지 않습니다.');
             recognition.start();
-            micBtn.classList.add('bg-red-100', 'animate-pulse');
+            micBtn.classList.add('bg-red-50', 'text-red-500');
         }
 
         async function sendMessage() {
@@ -93,16 +141,16 @@
                 const data = await response.json();
                 if (data.response) {
                     appendMessage('ai', data.response);
-                    speak(data.response); // Automatically speak the response
+                    speak(data.response);
                     history.push({ role: 'user', parts: [{ text: message }] });
                     history.push({ role: 'model', parts: [{ text: data.response }] });
                 } else {
-                    const errMsg = '죄송합니다. 잠시 목소리가 들리지 않네요. 다시 말씀해 주시겠어요?';
+                    const errMsg = '성도님, 잠시 연결이 고르지 못하네요. 다시 말씀해 주시겠어요?';
                     appendMessage('ai', errMsg);
                     speak(errMsg);
                 }
             } catch (error) {
-                const errMsg = '오류가 발생했습니다. 나중에 다시 시도해 주세요.';
+                const errMsg = '오류가 발생했습니다. 평안을 위해 기도하겠습니다.';
                 appendMessage('ai', errMsg);
                 speak(errMsg);
             }
@@ -110,20 +158,30 @@
 
         function appendMessage(role, text) {
             const div = document.createElement('div');
-            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} items-end gap-2`;
             
+            const avatar = document.createElement('div');
+            avatar.className = `w-8 h-8 rounded-full flex items-center justify-center text-xs ${role === 'user' ? 'order-last bg-blue-100 text-blue-600' : 'bg-gray-200'}`;
+            avatar.innerText = role === 'user' ? '나' : 'AI';
+
             const bubble = document.createElement('div');
-            bubble.className = `${role === 'user' ? 'message-user' : 'message-ai'} p-4 max-w-[80%] shadow-sm whitespace-pre-wrap`;
+            bubble.className = `${role === 'user' ? 'message-user' : 'message-ai'} p-4 max-w-[85%] text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap`;
             bubble.innerText = text;
 
+            div.appendChild(avatar);
             div.appendChild(bubble);
+            if (role === 'user') div.insertBefore(bubble, avatar);
+
             chatBox.appendChild(div);
-            chatBox.scrollTop = chatBox.scrollHeight;
+            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
         }
 
         userInput.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') sendMessage();
         });
+
+        // Load voices once
+        window.speechSynthesis.onvoiceschanged = () => { window.speechSynthesis.getVoices(); };
     </script>
 </body>
 </html>
