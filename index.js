@@ -2,17 +2,24 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // [1] AI 상담 API 로직 (진단 기능 강화)
+    // [1] AI 상담 API 로직 (변수 인식 로직 강화)
     if (url.pathname === "/api/chat" && request.method === "POST") {
       try {
         const { message, history } = await request.json();
-        const api_key = env.GEMINI_API_KEY;
+        
+        // 어떤 환경에서도 API 키를 찾을 수 있도록 이중 체크
+        // 1. env 객체 확인 (표준)
+        // 2. 전역 변수 확인 (일부 환경)
+        const api_key = env.GEMINI_API_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : null);
 
         if (!api_key) {
-          return new Response(JSON.stringify({ response: "에러: GEMINI_API_KEY가 서버에 등록되지 않았습니다. 대시보드 설정을 확인해주세요." }), { status: 200 });
+          // 현재 서버가 인식하고 있는 변수들의 목록을 살짝 엿봅니다 (디버깅용)
+          const availableKeys = Object.keys(env).join(", ");
+          return new Response(JSON.stringify({ 
+            response: `에러: 서버에서 GEMINI_API_KEY를 찾을 수 없습니다. (현재 인식된 변수: ${availableKeys || '없음'})` 
+          }), { status: 200 });
         }
 
-        // 안정적인 1.5 Flash 모델 사용
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${api_key}`;
         
         const response = await fetch(geminiUrl, {
@@ -20,18 +27,14 @@ export default {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [...(history || []).map(h => ({ role: h.role === 'model' ? 'model' : 'user', parts: [{ text: h.parts[0].text }] })), { role: 'user', parts: [{ text: message }] }],
-            systemInstruction: { parts: [{ text: "너는 부드럽고 인자한 영적 동반자 '진리'야. 성도들의 고민을 들으면 차분하고 정중하게 '성도님...' 하며 대화를 시작해줘. 반드시 성경 구절을 인용해줘." }] }
+            systemInstruction: { parts: [{ text: "너는 부드럽고 인자한 영적 동반자 '진리'야. 성도들의 고민을 들으면 차분하고 정중하게 '성도님...' 하며 대화를 시작해줘. 성경 구절을 인용해줘." }] }
           })
         });
 
         const data = await response.json();
         
         if (data.error) {
-          return new Response(JSON.stringify({ response: `API 에러 발생: ${data.error.message}` }), { status: 200 });
-        }
-
-        if (!data.candidates || data.candidates.length === 0) {
-          return new Response(JSON.stringify({ response: "AI가 응답을 생성하지 못했습니다. (Quota 제한 또는 부적절한 내용)" }), { status: 200 });
+          return new Response(JSON.stringify({ response: `API 에러: ${data.error.message}` }), { status: 200 });
         }
 
         const text = data.candidates[0].content.parts[0].text;
@@ -75,7 +78,7 @@ const HTML_CONTENT = `
     <div class="w-full max-w-2xl flex flex-col px-4 md:px-0">
         <header class="glass-header py-5 flex justify-between items-center px-4 mb-2">
             <div class="flex items-center gap-3"><span class="text-2xl">🕊️</span><div><h1 class="text-xl font-bold">My Pray</h1><p class="text-[10px] uppercase text-[var(--divine-gold)] font-semibold">Divine Wisdom</p></div></div>
-            <div class="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full"><div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div><span class="text-[10px] text-green-600">연결됨</span></div>
+            <div id="status-indicator" class="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full"><div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div><span class="text-[10px] text-green-600">연결됨</span></div>
         </header>
         <main class="flex-1 flex flex-col">
             <div id="chat-box" class="chat-container space-y-8 py-6 px-2">
