@@ -1,5 +1,10 @@
 node_modules
 .env
+.env.local
+.env.*.local
+dist
 bible.md
 crawler.js
 package-lock.json
+*.log
+.DS_Store
