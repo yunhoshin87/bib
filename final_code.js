@@ -59,9 +59,9 @@ const HTML_BODY = `
         .input-area { background: rgba(255,255,255,0.9); backdrop-filter: blur(20px); border: 1px solid rgba(197,160,89,0.3); border-radius: 30px; margin: 0 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); }
         .gold-btn { background: var(--divine-gold); color: white; border-radius: 50%; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
         .gold-btn:active { transform: scale(0.9); }
-        .welcome-card { background: linear-gradient(135deg, #fff 0%, #f9f6ef 100%); border: 1px solid rgba(197,160,89,0.2); border-radius: 24px; padding: 24px; margin: 20px 10px; }
-        .mic-active { color: #ff4b4b !important; animation: pulse 1.5s infinite; }
+        .mic-active { background: #ff4b4b !important; animation: pulse 1.5s infinite; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        .welcome-card { background: linear-gradient(135deg, #fff 0%, #f9f6ef 100%); border: 1px solid rgba(197,160,89,0.2); border-radius: 24px; padding: 24px; margin: 20px 10px; }
     </style>
 </head>
 <body class="flex justify-center min-h-screen">
@@ -92,24 +92,41 @@ const HTML_BODY = `
         let recognition;
         let isListening = false;
 
+        // [STT] 음성 인식 설정
         if ('webkitSpeechRecognition' in window) {
             recognition = new webkitSpeechRecognition();
             recognition.continuous = false;
+            recognition.interimResults = false;
             recognition.lang = 'ko-KR';
-            recognition.onresult = (e) => { userInput.value = e.results[0][0].transcript; sendMessage(); };
-            recognition.onend = () => { isListening = false; micBtn.classList.remove('mic-active'); };
+            recognition.onresult = (event) => {
+                const text = event.results[0][0].transcript;
+                userInput.value = text;
+                sendMessage();
+            };
+            recognition.onend = () => {
+                isListening = false;
+                micBtn.classList.remove('text-red-500', 'mic-active');
+            };
         }
 
         function toggleMic() {
-            if (!recognition) return alert('음성 인식을 지원하지 않는 브라우저입니다.');
-            if (isListening) { recognition.stop(); } 
-            else { recognition.start(); isListening = true; micBtn.classList.add('mic-active'); }
+            if (!recognition) return alert('이 브라우저는 음성 인식을 지원하지 않습니다.');
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+                isListening = true;
+                micBtn.classList.add('text-red-500', 'mic-active');
+            }
         }
 
+        // [TTS] 음성 출력 설정
         function speak(text) {
             window.speechSynthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'ko-KR'; utterance.rate = 0.9; utterance.pitch = 0.8;
+            utterance.lang = 'ko-KR';
+            utterance.rate = 0.9; // 조금 천천히 정중하게
+            utterance.pitch = 0.8; // 낮은 톤으로 차분하게
             window.speechSynthesis.speak(utterance);
         }
 
@@ -124,7 +141,7 @@ const HTML_BODY = `
                 if (data.response) { 
                     appendMessage('ai', data.response); 
                     history.push({ role: 'user', parts: [{ text: message }] }, { role: 'model', parts: [{ text: data.response }] }); 
-                    speak(data.response);
+                    speak(data.response); // AI 답변 시 음성 출력
                 }
             } catch (e) { appendMessage('ai', '오류가 발생했습니다.'); }
         }
