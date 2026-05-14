@@ -2,39 +2,53 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // [1] AI 상담 API 로직
+    // [1] AI 상담 API 로직 (진단 기능 강화)
     if (url.pathname === "/api/chat" && request.method === "POST") {
       try {
         const { message, history } = await request.json();
         const api_key = env.GEMINI_API_KEY;
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${api_key}`;
+
+        if (!api_key) {
+          return new Response(JSON.stringify({ response: "에러: GEMINI_API_KEY가 서버에 등록되지 않았습니다. 대시보드 설정을 확인해주세요." }), { status: 200 });
+        }
+
+        // 안정적인 1.5 Flash 모델 사용
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${api_key}`;
         
         const response = await fetch(geminiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [...(history || []).map(h => ({ role: h.role === 'model' ? 'model' : 'user', parts: [{ text: h.parts[0].text }] })), { role: 'user', parts: [{ text: message }] }],
-            systemInstruction: { parts: [{ text: "너는 부드럽고 인자한 영적 동반자 '진리'야. 성도들의 고민을 들으면 차분하고 정중하게 '성도님...' 하며 대화를 시작해줘. 반드시 성경 속의 구체적인 예시를 들어 위로해주고 성경 구절을 인용해줘." }] }
+            systemInstruction: { parts: [{ text: "너는 부드럽고 인자한 영적 동반자 '진리'야. 성도들의 고민을 들으면 차분하고 정중하게 '성도님...' 하며 대화를 시작해줘. 반드시 성경 구절을 인용해줘." }] }
           })
         });
 
         const data = await response.json();
-        return new Response(JSON.stringify({ response: data.candidates[0].content.parts[0].text }), {
+        
+        if (data.error) {
+          return new Response(JSON.stringify({ response: `API 에러 발생: ${data.error.message}` }), { status: 200 });
+        }
+
+        if (!data.candidates || data.candidates.length === 0) {
+          return new Response(JSON.stringify({ response: "AI가 응답을 생성하지 못했습니다. (Quota 제한 또는 부적절한 내용)" }), { status: 200 });
+        }
+
+        const text = data.candidates[0].content.parts[0].text;
+        return new Response(JSON.stringify({ response: text }), {
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
         });
       } catch (e) {
-        return new Response(JSON.stringify({ error: e.message }), { status: 500, headers: { "Access-Control-Allow-Origin": "*" } });
+        return new Response(JSON.stringify({ response: `시스템 오류: ${e.message}` }), { status: 200 });
       }
     }
 
-    // [2] 웹 화면(HTML) 출력
     return new Response(HTML_CONTENT, {
       headers: { "Content-Type": "text/html; charset=utf-8" }
     });
   }
 };
 
-// HTML 내용을 안전하게 삽입하기 위해 백틱(`)과 변수(${...})를 이스케이프 처리했습니다.
 const HTML_CONTENT = `
 <!DOCTYPE html>
 <html lang="ko">
@@ -45,7 +59,7 @@ const HTML_CONTENT = `
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
-        :root { --parchment: #fcfaf2; --divine-gold: #c5a059; --deep-charcoal: #2d2d2f; --prayer-brown: #5d4e37; }
+        :root { --parchment: #fcfaf2; --divine-gold: #c5a059; --prayer-brown: #5d4e37; --deep-charcoal: #2d2d2f; }
         body { font-family: 'Inter', sans-serif; background-color: var(--parchment); color: var(--deep-charcoal); }
         h1, h2, .serif { font-family: 'Bodoni Moda', serif; }
         .glass-header { background: rgba(252, 250, 242, 0.8); backdrop-filter: blur(20px); border-bottom: 1px solid rgba(197, 160, 89, 0.2); position: sticky; top: 0; z-index: 100; }
