@@ -222,6 +222,7 @@
                     speak(errMsg);
                 }
             } catch (error) {
+                console.error('Fetch Error:', error);
                 const errMsg = '오류가 발생했습니다. 평안을 위해 기도하겠습니다.';
                 appendMessage('ai', errMsg);
                 speak(errMsg);
