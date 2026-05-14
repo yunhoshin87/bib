@@ -10,7 +10,8 @@
         :root {
             --parchment: #fcfaf2;
             --divine-gold: #c5a059;
-            --deep-charcoal: #1c1c1e;
+            --deep-charcoal: #2d2d2f;
+            --prayer-brown: #5d4e37;
             --soft-gray: #f5f5f7;
         }
         body {
@@ -46,9 +47,10 @@
             animation: fadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         .message-user {
-            background: var(--deep-charcoal);
+            background: var(--prayer-brown);
             color: white;
             border-radius: 20px 20px 4px 20px;
+            box-shadow: 0 4px 12px rgba(93, 78, 55, 0.15);
             animation: fadeUp 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
         }
         @keyframes fadeUp {
@@ -65,14 +67,19 @@
         .gold-btn {
             background: var(--divine-gold);
             color: white;
-            border-radius: 25px;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             transition: all 0.3s ease;
         }
         .gold-btn:hover {
             filter: brightness(1.1);
-            transform: scale(1.02);
+            transform: scale(1.05);
         }
-        .gold-btn:active { transform: scale(0.98); }
+        .gold-btn:active { transform: scale(0.95); }
         
         .welcome-card {
             background: linear-gradient(135deg, #fff 0%, #f9f6ef 100%);
@@ -133,7 +140,7 @@
 
             <!-- Bottom Input Section -->
             <div class="sticky bottom-0 pb-8 pt-4 bg-gradient-to-t from-[var(--parchment)] via-[var(--parchment)] to-transparent">
-                <div class="input-area flex items-center p-2 gap-2">
+                <div class="input-area flex items-center p-2 gap-2 pr-3">
                     <button id="mic-btn" onclick="startRecognition()" class="p-3 rounded-full hover:bg-gray-100 transition-all group" title="음성 입력">
                         <svg class="w-5 h-5 text-gray-400 group-hover:text-[var(--divine-gold)]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-20a3 3 0 00-3 3v8a3 3 0 006 0V5a3 3 0 00-3-3z"></path>
@@ -141,8 +148,10 @@
                     </button>
                     <input type="text" id="user-input" placeholder="상담 신청하기..." 
                            class="flex-1 bg-transparent border-none focus:ring-0 text-[15px] px-2 outline-none">
-                    <button onclick="sendMessage()" class="gold-btn px-6 py-2.5 font-semibold text-[14px]">
-                        대화하기
+                    <button onclick="sendMessage()" class="gold-btn" title="전송">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
                     </button>
                 </div>
                 <p class="text-[10px] text-center text-gray-400 mt-4 tracking-wider uppercase opacity-60">
@@ -231,7 +240,7 @@
 
         function appendMessage(role, text) {
             const wrapper = document.createElement('div');
-            wrapper.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'} gap-3 items-end`;
+            wrapper.className = \`flex \${role === 'user' ? 'justify-end' : 'justify-start'} gap-3 items-end\`;
             
             if (role === 'ai') {
                 const avatar = document.createElement('div');
@@ -241,7 +250,7 @@
             }
 
             const bubble = document.createElement('div');
-            bubble.className = `${role === 'user' ? 'message-user' : 'message-ai'} p-5 max-w-[85%] text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap`;
+            bubble.className = \`\${role === 'user' ? 'message-user' : 'message-ai'} p-5 max-w-[85%] text-[15px] leading-relaxed shadow-sm whitespace-pre-wrap\`;
             bubble.innerText = text;
             wrapper.appendChild(bubble);
 
