@@ -2,38 +2,44 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
-    // [1] AI 상담 API 로직 (변수 인식 로직 강화)
+    // [1] AI 상담 API 로직 (최신 모델명 적용)
     if (url.pathname === "/api/chat" && request.method === "POST") {
       try {
         const { message, history } = await request.json();
-        
-        // 어떤 환경에서도 API 키를 찾을 수 있도록 이중 체크
-        // 1. env 객체 확인 (표준)
-        // 2. 전역 변수 확인 (일부 환경)
         const api_key = env.GEMINI_API_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : null);
 
         if (!api_key) {
-          // 현재 서버가 인식하고 있는 변수들의 목록을 살짝 엿봅니다 (디버깅용)
-          const availableKeys = Object.keys(env).join(", ");
-          return new Response(JSON.stringify({ 
-            response: `에러: 서버에서 GEMINI_API_KEY를 찾을 수 없습니다. (현재 인식된 변수: ${availableKeys || '없음'})` 
-          }), { status: 200 });
+          return new Response(JSON.stringify({ response: "에러: GEMINI_API_KEY가 서버에 등록되지 않았습니다." }), { status: 200 });
         }
 
-        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${api_key}`;
+        // 구글 Gemini 1.5 Flash 최신 모델명으로 수정
+        const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${api_key}`;
         
         const response = await fetch(geminiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [...(history || []).map(h => ({ role: h.role === 'model' ? 'model' : 'user', parts: [{ text: h.parts[0].text }] })), { role: 'user', parts: [{ text: message }] }],
-            systemInstruction: { parts: [{ text: "너는 부드럽고 인자한 영적 동반자 '진리'야. 성도들의 고민을 들으면 차분하고 정중하게 '성도님...' 하며 대화를 시작해줘. 성경 구절을 인용해줘." }] }
+            systemInstruction: { parts: [{ text: "너는 부드럽고 인자한 영적 동반자 '진리'야. 성도들의 고민을 들으면 차분하고 정중하게 '성도님...' 하며 대화를 시작해줘. 반드시 성경 구절을 인용해줘." }] }
           })
         });
 
         const data = await response.json();
         
         if (data.error) {
+          // 에러가 나면 다른 대체 모델(gemini-pro)로 시도
+          const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${api_key}`;
+          const fallbackRes = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [...(history || []).map(h => ({ role: h.role === 'model' ? 'model' : 'user', parts: [{ text: h.parts[0].text }] })), { role: 'user', parts: [{ text: message }] }]
+            })
+          });
+          const fallbackData = await fallbackRes.json();
+          if (fallbackData.candidates) {
+            return new Response(JSON.stringify({ response: fallbackData.candidates[0].content.parts[0].text }), { headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" } });
+          }
           return new Response(JSON.stringify({ response: `API 에러: ${data.error.message}` }), { status: 200 });
         }
 
@@ -78,7 +84,7 @@ const HTML_CONTENT = `
     <div class="w-full max-w-2xl flex flex-col px-4 md:px-0">
         <header class="glass-header py-5 flex justify-between items-center px-4 mb-2">
             <div class="flex items-center gap-3"><span class="text-2xl">🕊️</span><div><h1 class="text-xl font-bold">My Pray</h1><p class="text-[10px] uppercase text-[var(--divine-gold)] font-semibold">Divine Wisdom</p></div></div>
-            <div id="status-indicator" class="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full"><div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div><span class="text-[10px] text-green-600">연결됨</span></div>
+            <div class="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full"><div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div><span class="text-[10px] text-green-600">연결됨</span></div>
         </header>
         <main class="flex-1 flex flex-col">
             <div id="chat-box" class="chat-container space-y-8 py-6 px-2">
