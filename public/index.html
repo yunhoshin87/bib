@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIB - AI Pastor</title>
+    <title>My Pray - 당신을 위한 기도</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -97,13 +97,13 @@
             <div class="flex items-center gap-3">
                 <span class="text-2xl text-[var(--divine-gold)]">🕊️</span>
                 <div>
-                    <h1 class="text-xl font-bold tracking-tight text-[var(--deep-charcoal)]">BIB AI Pastor</h1>
+                    <h1 class="text-xl font-bold tracking-tight text-[var(--deep-charcoal)]">My Pray</h1>
                     <p class="text-[10px] uppercase tracking-[0.1em] text-[var(--divine-gold)] font-semibold">Divine Wisdom for You</p>
                 </div>
             </div>
             <div id="status-indicator" class="flex items-center gap-2 px-3 py-1 bg-green-50 rounded-full">
                 <div class="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
-                <span class="text-[10px] font-medium text-green-600">성전 연결됨</span>
+                <span class="text-[10px] font-medium text-green-600">연결됨</span>
             </div>
         </header>
 
@@ -117,12 +117,12 @@
                         <span class="font-semibold not-italic">— 요한복음 14:1</span>
                     </p>
                     <div class="h-px bg-gradient-to-r from-transparent via-[var(--divine-gold)] to-transparent opacity-20 my-4"></div>
-                    <p class="text-[13px] text-gray-500">평안하십니까, 성도님. 무엇이든 편안하게 말씀해 주세요.</p>
+                    <p class="text-[13px] text-gray-500">평안하십니까. 무엇이든 편안하게 말씀해 주세요.</p>
                 </div>
 
                 <!-- Initial AI Message -->
                 <div class="flex justify-start gap-3 items-end">
-                    <div class="w-9 h-9 rounded-full bg-[var(--divine-gold)] flex items-center justify-center text-white text-xs shadow-md">목사</div>
+                    <div class="w-9 h-9 rounded-full bg-[var(--divine-gold)] flex items-center justify-center text-white text-xs shadow-md">진리</div>
                     <div class="message-ai p-5 max-w-[85%] text-[15px] leading-relaxed">
                         성도님, 오늘 하루도 주님의 은혜 아래 평안하셨는지요. 
                         마음속에 무거운 짐이 있다면 이 자리에 내려놓으셔도 좋습니다. 
@@ -139,14 +139,14 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-20a3 3 0 00-3 3v8a3 3 0 006 0V5a3 3 0 00-3-3z"></path>
                         </svg>
                     </button>
-                    <input type="text" id="user-input" placeholder="목사님께 상담 신청하기..." 
+                    <input type="text" id="user-input" placeholder="상담 신청하기..." 
                            class="flex-1 bg-transparent border-none focus:ring-0 text-[15px] px-2 outline-none">
                     <button onclick="sendMessage()" class="gold-btn px-6 py-2.5 font-semibold text-[14px]">
                         대화하기
                     </button>
                 </div>
                 <p class="text-[10px] text-center text-gray-400 mt-4 tracking-wider uppercase opacity-60">
-                    &copy; 2026 BIB Project &middot; Divine Intelligence
+                    &copy; 2026 My Pray &middot; Divine Wisdom
                 </p>
             </div>
         </main>
@@ -217,7 +217,7 @@
                     history.push({ role: 'user', parts: [{ text: message }] });
                     history.push({ role: 'model', parts: [{ text: data.response }] });
                 } else {
-                    const errMsg = '성도님, 잠시 기도가 부족했는지 연결이 고르지 못하네요. 다시 말씀해 주시겠어요?';
+                    const errMsg = '성도님, 잠시 연결이 고르지 못하네요. 다시 말씀해 주시겠어요?';
                     appendMessage('ai', errMsg);
                     speak(errMsg);
                 }
@@ -235,7 +235,7 @@
             if (role === 'ai') {
                 const avatar = document.createElement('div');
                 avatar.className = "w-9 h-9 rounded-full bg-[var(--divine-gold)] flex items-center justify-center text-white text-xs shadow-md";
-                avatar.innerText = "목사";
+                avatar.innerText = "진리";
                 wrapper.appendChild(avatar);
             }
 
