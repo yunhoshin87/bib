@@ -1,3 +1,24 @@
+let bibleCache = null;
+
+async function findRelevantVerses(query) {
+    try {
+        if (!bibleCache) {
+            const res = await fetch("https://raw.githubusercontent.com/yunhoshin87/bib/main/bible.md");
+            if (res.ok) {
+                const text = await res.text();
+                bibleCache = text.split('\n').filter(line => /^\d+\./.test(line.trim()));
+            }
+        }
+        if (!bibleCache || bibleCache.length === 0) return "";
+        const keywords = query.split(' ').filter(k => k.length > 1);
+        if (keywords.length === 0) return "";
+        const matches = bibleCache.filter(verse => keywords.some(kw => verse.includes(kw)));
+        return matches.slice(0, 3).join('\n');
+    } catch (e) {
+        return "";
+    }
+}
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
@@ -7,29 +28,49 @@ export default {
         const { message, history } = await request.json();
         const api_key = env.GEMINI_API_KEY || (typeof GEMINI_API_KEY !== 'undefined' ? GEMINI_API_KEY : null);
 
-        if (!api_key) return new Response(JSON.stringify({ response: "에러: API 키가 설정되지 않았습니다." }), { status: 200 });
+        if (!api_key) return new Response(JSON.stringify({ response: "에러: 클라우드플레어 대시보드(Settings > Variables)에서 GEMINI_API_KEY를 설정해 주세요." }), { 
+            status: 200,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        });
 
         const modelName = "gemini-2.5-flash"; 
         const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${api_key}`;
         
+        const relevantVerses = await findRelevantVerses(message);
+        const augmentedMessage = relevantVerses 
+            ? `성도님의 고민과 관련된 성경 말씀입니다:\n${relevantVerses}\n\n성도님의 고민: ${message}`
+            : message;
+
         const response = await fetch(geminiUrl, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            contents: [...(history || []).map(h => ({ role: h.role === 'model' ? 'model' : 'user', parts: [{ text: h.parts[0].text }] })), { role: 'user', parts: [{ text: message }] }],
-            systemInstruction: { parts: [{ text: "너는 부드럽고 인자한 영적 동반자 '진리'야. 성도들의 고민을 들으면 차분하고 정중하게 '성도님...' 하며 대화를 시작해줘. 반드시 성경 속의 구체적인 예시를 들어 위로해주고 성경 구절을 인용해줘." }] }
+            contents: [...(history || []).map(h => ({ role: h.role === 'model' ? 'model' : 'user', parts: [{ text: h.parts[0].text }] })), { role: 'user', parts: [{ text: augmentedMessage }] }],
+            systemInstruction: { parts: [{ text: "너는 부드럽고 인자한 영적 동반자 '진리'야. 성도들의 고민을 들으면 차분하고 정중하게 '성도님...' 하며 대화를 시작해줘. 반드시 성경 속의 구체적인 예시를 들어 위로해주고 성경 구절을 인용해줘. 대화 마지막에는 성도님을 위한 따뜻한 축복의 한마디를 꼭 남겨줘." }] }
           })
         });
 
         const data = await response.json();
-        if (data.error) return new Response(JSON.stringify({ response: `API 에러: ${data.error.message}` }), { status: 200 });
+        if (data.error) return new Response(JSON.stringify({ response: `API 에러: ${data.error.message}` }), { 
+            status: 200,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        });
+
+        if (!data.candidates || data.candidates.length === 0) {
+            return new Response(JSON.stringify({ response: "죄송합니다. 적절한 말씀을 찾지 못했습니다. 다시 한번 말씀해 주시겠어요?" }), {
+                headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+            });
+        }
 
         const text = data.candidates[0].content.parts[0].text;
         return new Response(JSON.stringify({ response: text }), {
           headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
         });
       } catch (e) {
-        return new Response(JSON.stringify({ response: `시스템 오류: ${e.message}` }), { status: 200 });
+        return new Response(JSON.stringify({ response: `시스템 오류: ${e.message}` }), { 
+            status: 200,
+            headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+        });
       }
     }
 
@@ -119,14 +160,28 @@ const HTML_BODY = `
             appendMessage('user', message);
             userInput.value = '';
             try {
-                const response = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message, history }) });
+                const response = await fetch('/api/chat', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json' }, 
+                    body: JSON.stringify({ message, history }) 
+                });
+                
+                if (!response.ok) {
+                    throw new Error('서버 통신 오류 (' + response.status + ')');
+                }
+                
                 const data = await response.json();
                 if (data.response) { 
                     appendMessage('ai', data.response); 
                     history.push({ role: 'user', parts: [{ text: message }] }, { role: 'model', parts: [{ text: data.response }] }); 
                     speak(data.response);
+                } else if (data.error) {
+                    appendMessage('ai', '오류: ' + data.error);
                 }
-            } catch (e) { appendMessage('ai', '오류가 발생했습니다.'); }
+            } catch (e) { 
+                console.error(e);
+                appendMessage('ai', '죄송합니다. 문제가 발생했습니다: ' + e.message); 
+            }
         }
 
         function appendMessage(role, text) {
