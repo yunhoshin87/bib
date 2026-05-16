@@ -159,6 +159,11 @@ const HTML_BODY = `
             if (!message) return;
             appendMessage('user', message);
             userInput.value = '';
+            
+            // 작성 중 표시 추가
+            const typingId = 'typing-' + Date.now();
+            appendTypingIndicator(typingId);
+            
             try {
                 const response = await fetch('/api/chat', { 
                     method: 'POST', 
@@ -171,6 +176,10 @@ const HTML_BODY = `
                 }
                 
                 const data = await response.json();
+                
+                // 작성 중 표시 제거
+                removeElement(typingId);
+                
                 if (data.response) { 
                     appendMessage('ai', data.response); 
                     history.push({ role: 'user', parts: [{ text: message }] }, { role: 'model', parts: [{ text: data.response }] }); 
@@ -179,9 +188,31 @@ const HTML_BODY = `
                     appendMessage('ai', '오류: ' + data.error);
                 }
             } catch (e) { 
+                removeElement(typingId);
                 console.error(e);
                 appendMessage('ai', '죄송합니다. 문제가 발생했습니다: ' + e.message); 
             }
+        }
+
+        function appendTypingIndicator(id) {
+            const wrapper = document.createElement('div');
+            wrapper.id = id;
+            wrapper.className = "flex justify-start gap-3 items-end px-2 animate-pulse";
+            const avatar = document.createElement('div'); 
+            avatar.className = "w-9 h-9 rounded-full bg-[var(--divine-gold)] flex items-center justify-center text-white text-xs shadow-md"; 
+            avatar.innerText = "진리"; 
+            wrapper.appendChild(avatar);
+            const bubble = document.createElement('div');
+            bubble.className = "message-ai p-4 max-w-[85%] text-[14px] italic text-gray-500 shadow-sm";
+            bubble.innerText = "진리님이 말씀을 묵상 중입니다...";
+            wrapper.appendChild(bubble);
+            chatBox.appendChild(wrapper);
+            chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
+        }
+
+        function removeElement(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
         }
 
         function appendMessage(role, text) {
